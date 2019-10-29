@@ -1,2 +1,1 @@
-# learning-python
-learning python 3
+# ---learning python---
