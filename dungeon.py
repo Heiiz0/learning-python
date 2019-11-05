@@ -11,37 +11,38 @@ legend = {
           "W": "a dangerous wolf",
           "@": "the player",
           "k": "a key to open a door",
+          "H": "a dangorues Hydra",
           }
 
 
 d1 = """
 ###########################
-#D#.......................#
-#.#.......................#
-#.#.................W.k...#
-#.#...................###.#
-#.....................#D..#
+#>#.......................#
+#D#.......W.......A.......#
+#.#....*............W.k...#
+#.#........#.#........###.#
+#..........#H#........#D..#
 ###########################
 """
 
 d2 = """
 ###########################
-#..........#D.............#
+#<.........#D.............#
 #..#.......###............#
 ####......................#
 #..............############
-#.........................#
+#>........................#
 ###########################
 """
 
 d3 = """
 ###########################
-#.............W.k.........#
-#..............W.........D#
+#§W...........W.k.........#
+#W.............W.........D#
 #.#########################
 #...............W.........#
 #########################.#
-#..................W......#
+#<.................W......#
 ###########################
 """
 
@@ -59,6 +60,18 @@ def create():
                 elif char == "D":
                     row.append(".")
                     Door(x,y,z)
+                elif char == "H":
+                    row.append(".")
+                    Hydra(x,y,z)
+                elif char == "§":
+                    row.append(".")
+                    Chicken(x,y,z)
+                elif char == "A":
+                    row.append(".")
+                    Dog(x,y,z)
+                elif char == "*":
+                    row.append(".")
+                    Portal(x,y,z)
                 else:
                     row.append(char)
             level.append(row)
@@ -86,11 +99,26 @@ def strike(a, d):
     print(aname, "tries to attack", dname, "(3d6+{} > 2d6+{})".format(a.dexterity, d.dexterity))
     aroll = roll_dice(3,6, a.dexterity)
     droll = roll_dice(2,6, d.dexterity)
-    if aroll > droll:
-        print("attack sucessfull, 30 damage")
-        d.hitpoints -= 30
+    if aroll <= droll:
+           print("attack failed")
+           return # leave this function 
+# ---attack was successfull---
+# ---damage calculation---
+        
+    print("attack hits, calculating damage....")
+    droll = roll_dice(1, a.strength, 0)
+    print("armor reduces damage by {}".format(d.armor))
+    damage = droll-d.armor
+    if damage <= 0:
+             print("No armor penetration, therefore no damage")
+            #d.hitpoints -= damage
+            #print("{} has only {} hitpoints left".format(dname, d.hitpoints))
+            
     else:
-        print("attack failed")
+        print("attack successfull, {} damage".format(damage))
+        d.hitpoints -= damage
+        print("{} has only {} hitpoints left".format(dname, d.hitpoints))
+     
     
 
 class Monster():
@@ -108,13 +136,18 @@ class Monster():
         self.keys = 0
         self.strength = 5
         self.dexterity = 5
+        self.armor = 0
         self.char = "M"
         self.hitpoints = 100
         self.overwrite_parameters()
         
     def collision(self, other):
-        print("Boing! {} is attacking {}".format(other.__class__.__name__,
+        print("Strike! {} is attacking {}".format(other.__class__.__name__,
                                                  self.__class__.__name__))
+        strike(other, self)
+        if self.hitpoints > 0:
+            print("counterstrike")
+            strike(self, other)
         
     def overwrite_parameters(self):
         pass
@@ -171,6 +204,7 @@ class Hero(Monster):
         self.char = "@"
         self.dexterity = 5
         self.strength = 8
+        self.armor = 3
     
 class Wolf(Monster):
     
@@ -179,6 +213,48 @@ class Wolf(Monster):
         self.char = "W"
         self.dexterity = 7
         self.strength = 4
+        self.armor = 1
+        
+        
+class Hydra(Monster):
+    
+    def overwrite_parameters(self):
+        self.hitpoints = 1000
+        self.char = "H"
+        self.dexterity = 3
+        self.strength = 100
+        self.armor = 50
+        
+class Chicken(Monster):
+    
+    def overwrite_parameters(self):
+        self.hitpoints = 9999999
+        self.char = "§"
+        self.dexterity = 0
+        self.strength = 0
+        self.armor = 0
+      
+class Dog(Monster):
+    
+    def overwrite_parameters(self):
+        self.hitpoints = 1
+        self.char = "A"
+        self.dexterity = 5
+        self.strength = 9999999999999999999999999999999999999
+        self.armor = 0
+        
+class Portal(Monster):
+    def overwrite_parameters(self):
+        self.hitpoints = 1
+        self.char = "*"
+        self.dexterity = 0
+        self.strength = 0
+        self.armor = 0
+    def collision(self, other):
+        print("Youre ported away")
+        other.x += random.randint(-3,3)
+        other.y += random.randint(-3,3)
+           
         
 
 def game():
@@ -206,9 +282,9 @@ def game():
         dx, dy = 0, 0
         if command == "quit":
             break
-        if command == "up" and player.z > 0:
+        if command == "up" and player.z > 0 and dungeon[player.z][player.y][player.x] == "<":
             player.z -= 1
-        if command == "down" and player.z < len(dungeon) - 1:
+        if command == "down" and player.z < len(dungeon) - 1 and dungeon[player.z][player.y][player.x] == ">":
             player.z += 1
         if command == "w":
             dy = -1
@@ -244,8 +320,8 @@ def game():
             player.keys += 1
             print("You found a key! You have {} key(s)".format(player.keys))
             dungeon[player.z][player.y][player.x] = "." # remove the key
-         
-            
+        
+    print("game over")     
 game()
                     
     
